@@ -51,12 +51,13 @@ permissions. This is roughly equivalent to querying `which program` at the comma
 and checking that a result is found, but no shelling out occurs.
 """
 function isexecutable(k::Symbol, prog::String)
+    access = iswindows(k) ? :_access : :access
     X_OK = 1 << 0 # Taken from unistd.h
     # If prog has a slash, we know the user wants to determine whether the given
     # file exists and is executable
     if '/' in prog || (iswindows(k) && '\\' in prog) # Windows can use / too
         isfile(prog) || return false
-        return ccall(:access, Cint, (Ptr{UInt8}, Cint), prog, X_OK) == 0
+        return ccall(access, Cint, (Ptr{UInt8}, Cint), prog, X_OK) == 0
     end
     path = get(ENV, "PATH", "")
     # Something is definitely wrong if the user's path is empty...
@@ -66,7 +67,7 @@ function isexecutable(k::Symbol, prog::String)
         if file == prog || (iswindows(k) && file == prog * ".exe")
             p = joinpath(dir, file)
             @assert isfile(p)
-            return ccall(:access, Cint, (Ptr{UInt8}, Cint), p, X_OK) == 0
+            return ccall(access, Cint, (Ptr{UInt8}, Cint), p, X_OK) == 0
         end
     end
     false
